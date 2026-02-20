@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  # Questo è il computer virtuale per il tuo Database
+  mongo:
+    image: mongo:latest
+    container_name: artaround-db
+    ports:
+      - "27017:27017" # Apre la porta per farci entrare
+    volumes:
+      - mongo_data:/data/db # Salva i dati in un "hard disk" virtuale persistente
+
+volumes:
+  mongo_data:
