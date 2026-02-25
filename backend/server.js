@@ -4,6 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes'); // <--- NUOVO: Importiamo le rotte qui in alto
+const itemRoutes = require('./routes/itemRoutes');
 
 const app = express();
 const PORT = 3000;
@@ -19,6 +20,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- ROTTE (Qui attiviamo i percorsi) ---
 app.use('/api/auth', authRoutes); // <--- NUOVO: Tutte le richieste che iniziano con /api/auth vanno al nostro file
+app.use('/api/items', itemRoutes);
 
 // Rotta di prova base
 app.get('/', (req, res) => {

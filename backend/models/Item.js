@@ -12,6 +12,7 @@ const itemSchema = new mongoose.Schema({
   // Dati base (Carta d'identità)
   name: { type: String, required: true }, // Titolo
   author: { type: String, required: true }, // Autore (in futuro potrebbe essere un Link a un'entità Persona)
+  license: { type: String },
   dateCreated: { type: String }, // Data (es. "1865-1866")
   artMedium: { type: String }, // Tecnica (es. "Olio su tela")
   
