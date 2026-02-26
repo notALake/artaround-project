@@ -11,162 +11,183 @@
         input, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
         button { background-color: #28a745; color: white; padding: 10px 20px; border: none; cursor: pointer; }
         button:hover { background-color: #218838; }
-        #message { margin-top: 20px; padding: 10px; display: none; text-align: center; font-weight: bold;}
         
-        /* Stile per la lista opere */
+        /* Stili per messaggi e sezioni */
+        #message { margin-top: 20px; padding: 10px; display: none; text-align: center; font-weight: bold; border-radius: 5px;}
+        .hidden { display: none; }
+        
+        /* Login Box */
+        #login-section { background: #e9ecef; padding: 20px; border-radius: 8px; text-align: center; }
+        #login-section input { max-width: 300px; margin: 10px auto; display: block; }
+
+        /* Lista Opere */
         .artwork-list { margin-top: 40px; border-top: 2px solid #ddd; padding-top: 20px; }
         .artwork-card { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
-        .artwork-card h3 { margin: 0 0 10px; color: #333; }
-        .artwork-card small { color: #666; font-style: italic; }
     </style>
 </head>
 <body>
 
-    <h1>🎨 ArtAround: Pannello Inserimento Opere</h1>
+    <h1>🎨 ArtAround: Pannello Curatore</h1>
 
-    <div id="artwork-form">
-        <div class="form-group">
-            <label for="name">Titolo dell'Opera:</label>
-            <input type="text" id="name" placeholder="Es. La Gioconda" required>
-        </div>
-
-        <div class="form-group">
-            <label for="author">Autore:</label>
-            <input type="text" id="author" placeholder="Es. Leonardo da Vinci" required>
-        </div>
-
-        <div class="form-group">
-            <label for="license">Licenza (Semantic Web):</label>
-            <input type="text" id="license" placeholder="Es. Public Domain">
-        </div>
-
-        <div class="form-group">
-            <label for="description">Descrizione:</label>
-            <textarea id="description" rows="4" placeholder="Descrivi l'opera..."></textarea>
-        </div>
-
-        <button onclick="salvaOpera()">💾 Salva Opera nel Database</button>
+    <div id="login-section">
+        <h2>🔐 Accesso Staff</h2>
+        <input type="email" id="email" placeholder="Email (es. mario@rossi.it)">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="effettuaLogin()">Entra</button>
     </div>
+
+    <div id="editor-section" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Nuova Opera</h2>
+            <button onclick="logout()" style="background-color: #dc3545;">Esci</button>
+        </div>
+
+        <div id="artwork-form">
+            <div class="form-group">
+                <label>Titolo dell'Opera:</label>
+                <input type="text" id="name" placeholder="Es. La Gioconda" required>
+            </div>
+            <div class="form-group">
+                <label>Autore:</label>
+                <input type="text" id="author" placeholder="Es. Leonardo da Vinci" required>
+            </div>
+            <div class="form-group">
+                <label>Licenza (Semantic Web):</label>
+                <input type="text" id="license" placeholder="Es. Public Domain">
+            </div>
+            <div class="form-group">
+                <label>Descrizione:</label>
+                <textarea id="description" rows="4" placeholder="Descrivi l'opera..."></textarea>
+            </div>
+            <button onclick="salvaOpera()">💾 Salva Opera</button>
+        </div>
 
     <div id="message"></div>
 
     <div class="artwork-list">
         <h2>🖼️ Opere nel Museo</h2>
-        
         <div style="margin-bottom: 20px;">
-            <input type="text" id="searchBar" placeholder="🔍 Cerca per titolo o autore..." 
-                   onkeyup="cercaOpere()" style="padding: 10px; width: 100%; font-size: 16px;">
+            <input type="text" id="searchBar" placeholder="🔍 Cerca opera..." onkeyup="cercaOpere()" style="padding: 10px;">
         </div>
-
-        <div id="lista-opere">
-            </div>
+        <div id="lista-opere"><p>Caricamento...</p></div>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api/items';
+        const API_URL = 'http://localhost:3000/api';
+        let token = localStorage.getItem('artaround_token'); // Cerchiamo se c'è già un token salvato
 
-        // 1. Funzione per salvare (quella di prima)
+        // All'avvio, controlliamo se l'utente è già loggato
+        if (token) {
+            mostraEditor();
+        }
+
+        // --- FUNZIONI DI AUTH ---
+        async function effettuaLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    token = data.token;
+                    localStorage.setItem('artaround_token', token); // Salviamo il token nel browser!
+                    mostraEditor();
+                } else {
+                    alert("Errore Login: " + data.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Errore di connessione");
+            }
+        }
+
+        function logout() {
+            token = null;
+            localStorage.removeItem('artaround_token');
+            location.reload(); // Ricarica la pagina
+        }
+
+        function mostraEditor() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('editor-section').classList.remove('hidden');
+        }
+
+        // --- FUNZIONI EDITOR (Modificate per usare il Token) ---
         async function salvaOpera() {
             const name = document.getElementById('name').value;
             const author = document.getElementById('author').value;
             const license = document.getElementById('license').value;
             const description = document.getElementById('description').value;
 
-            if (!name || !author) {
-                alert("⚠️ Titolo e Autore sono obbligatori!");
-                return;
-            }
+            if (!name || !author) { alert("Titolo e Autore obbligatori!"); return; }
 
             const nuovaOpera = {
-                "@context": "https://schema.org",
-                "@type": "VisualArtwork",
+                "@context": "https://schema.org", "@type": "VisualArtwork",
                 name, author, license, description,
-                dateCreated: "Data sconosciuta", 
-                provider: "Museo ArtAround"
+                dateCreated: "Sconosciuta", provider: "Museo ArtAround"
             };
 
             try {
-                const response = await fetch(API_URL, {
+                const response = await fetch(`${API_URL}/items`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // <--- ECCO LA CHIAVE! Inviamo il token
+                    },
                     body: JSON.stringify(nuovaOpera)
                 });
 
                 const data = await response.json();
-                const messageDiv = document.getElementById('message');
-                messageDiv.style.display = 'block';
+                const msgDiv = document.getElementById('message');
+                msgDiv.style.display = 'block';
 
                 if (response.ok) {
-                    messageDiv.style.backgroundColor = '#d4edda';
-                    messageDiv.style.color = '#155724';
-                    messageDiv.innerHTML = `✅ Opera salvata con successo!`;
-                    
-                    // Puliamo il modulo
-                    document.getElementById('name').value = '';
-                    document.getElementById('author').value = '';
-                    document.getElementById('license').value = '';
-                    document.getElementById('description').value = '';
-
-                    // AGGIORNAMENTO: Ricarichiamo la lista per vedere subito la nuova opera!
-                    caricaOpere(); 
+                    msgDiv.innerHTML = '✅ Opera salvata!';
+                    msgDiv.style.background = '#d4edda'; msgDiv.style.color = '#155724';
+                    cercaOpere(); // Aggiorna la lista
                 } else {
-                    messageDiv.style.backgroundColor = '#f8d7da';
-                    messageDiv.style.color = '#721c24';
-                    messageDiv.innerHTML = `❌ Errore: ${data.message}`;
+                    msgDiv.innerHTML = `❌ Errore: ${data.message}`;
+                    msgDiv.style.background = '#f8d7da'; msgDiv.style.color = '#721c24';
                 }
             } catch (error) {
-                console.error("Errore:", error);
-                alert("❌ Errore di connessione col server.");
+                console.error(error);
+                alert("Errore salvataggio");
             }
         }
-        
-        // Funzione aggiornata: accetta un parametro di ricerca (opzionale)
-        async function caricaOpere(filtro = '') {
-            const container = document.getElementById('lista-opere');
-            
-            // Se c'è un filtro, l'URL diventa: .../items?q=Leonardo
-            // Se non c'è, resta: .../items
-            let url = API_URL;
-            if (filtro) {
-                url += `?q=${filtro}`;
-            }
+
+        // --- FUNZIONI DI LETTURA (Restano uguali) ---
+        async function cercaOpere() {
+            const testo = document.getElementById('searchBar').value;
+            let url = `${API_URL}/items`;
+            if (testo) url += `?q=${testo}`;
 
             try {
-                const response = await fetch(url);
-                const opere = await response.json();
+                const res = await fetch(url);
+                const opere = await res.json();
+                const container = document.getElementById('lista-opere');
+                container.innerHTML = '';
 
-                container.innerHTML = ''; 
+                if (opere.length === 0) { container.innerHTML = '<p>Nessuna opera trovata.</p>'; return; }
 
-                if (opere.length === 0) {
-                    container.innerHTML = '<p>Nessuna opera trovata.</p>';
-                    return;
-                }
-
-                opere.forEach(opera => {
-                    const card = document.createElement('div');
-                    card.className = 'artwork-card';
-                    card.innerHTML = `
-                        <h3>${opera.name}</h3>
-                        <p><strong>Autore:</strong> ${opera.author}</p>
-                        <p>${opera.description || 'Nessuna descrizione'}</p>
-                        <small>Licenza: ${opera.license || 'N/A'}</small>
-                    `;
-                    container.appendChild(card);
+                opere.forEach(op => {
+                    container.innerHTML += `
+                        <div class="artwork-card">
+                            <h3>${op.name}</h3>
+                            <p><strong>Autore:</strong> ${op.author}</p>
+                            <small>${op.license || ''}</small>
+                        </div>`;
                 });
-
-            } catch (error) {
-                console.error("Errore nel caricamento:", error);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // NUOVA: Funzione collegata alla barra di ricerca
-        function cercaOpere() {
-            const testo = document.getElementById('searchBar').value;
-            caricaOpere(testo); // Ricarica la lista passando quello che hai scritto
-        }
-
-        // Al caricamento iniziale, chiamiamo la funzione senza filtri
-        window.onload = () => caricaOpere();
+        window.onload = cercaOpere;
     </script>
 
 </body>
