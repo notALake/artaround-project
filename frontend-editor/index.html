@@ -73,15 +73,13 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api';
-        let token = localStorage.getItem('artaround_token'); // Cerchiamo se c'è già un token salvato
+       const API_URL = 'http://localhost:3000/api';
+        let token = localStorage.getItem('artaround_token');
 
-        // All'avvio, controlliamo se l'utente è già loggato
         if (token) {
             mostraEditor();
         }
 
-        // --- FUNZIONI DI AUTH ---
         async function effettuaLogin() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -97,21 +95,21 @@
 
                 if (response.ok) {
                     token = data.token;
-                    localStorage.setItem('artaround_token', token); // Salviamo il token nel browser!
+                    localStorage.setItem('artaround_token', token);
                     mostraEditor();
                 } else {
-                    alert("Errore Login: " + data.message);
+                    alert("Errore: " + data.message);
                 }
             } catch (error) {
-                console.error(error);
-                alert("Errore di connessione");
+                console.error("Login error:", error);
+                alert("Errore di connessione al server");
             }
         }
 
         function logout() {
             token = null;
             localStorage.removeItem('artaround_token');
-            location.reload(); // Ricarica la pagina
+            location.reload();
         }
 
         function mostraEditor() {
@@ -119,19 +117,23 @@
             document.getElementById('editor-section').classList.remove('hidden');
         }
 
-        // --- FUNZIONI EDITOR (Modificate per usare il Token) ---
         async function salvaOpera() {
             const name = document.getElementById('name').value;
             const author = document.getElementById('author').value;
             const license = document.getElementById('license').value;
             const description = document.getElementById('description').value;
 
-            if (!name || !author) { alert("Titolo e Autore obbligatori!"); return; }
+            if (!name || !author) { 
+                alert("Titolo e Autore sono campi obbligatori"); 
+                return; 
+            }
 
             const nuovaOpera = {
-                "@context": "https://schema.org", "@type": "VisualArtwork",
+                "@context": "https://schema.org",
+                "@type": "VisualArtwork",
                 name, author, license, description,
-                dateCreated: "Sconosciuta", provider: "Museo ArtAround"
+                dateCreated: "Sconosciuta",
+                provider: "Museo ArtAround"
             };
 
             try {
@@ -139,7 +141,7 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` // <--- ECCO LA CHIAVE! Inviamo il token
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(nuovaOpera)
                 });
@@ -149,20 +151,21 @@
                 msgDiv.style.display = 'block';
 
                 if (response.ok) {
-                    msgDiv.innerHTML = '✅ Opera salvata!';
-                    msgDiv.style.background = '#d4edda'; msgDiv.style.color = '#155724';
-                    cercaOpere(); // Aggiorna la lista
+                    msgDiv.innerHTML = '✅ Opera salvata con successo';
+                    msgDiv.style.background = '#d4edda'; 
+                    msgDiv.style.color = '#155724';
+                    cercaOpere();
                 } else {
                     msgDiv.innerHTML = `❌ Errore: ${data.message}`;
-                    msgDiv.style.background = '#f8d7da'; msgDiv.style.color = '#721c24';
+                    msgDiv.style.background = '#f8d7da'; 
+                    msgDiv.style.color = '#721c24';
                 }
             } catch (error) {
-                console.error(error);
-                alert("Errore salvataggio");
+                console.error("Save error:", error);
+                alert("Errore durante il salvataggio");
             }
         }
 
-        // --- FUNZIONI DI LETTURA (Restano uguali) ---
         async function cercaOpere() {
             const testo = document.getElementById('searchBar').value;
             let url = `${API_URL}/items`;
@@ -174,7 +177,10 @@
                 const container = document.getElementById('lista-opere');
                 container.innerHTML = '';
 
-                if (opere.length === 0) { container.innerHTML = '<p>Nessuna opera trovata.</p>'; return; }
+                if (opere.length === 0) { 
+                    container.innerHTML = '<p>Nessuna opera trovata.</p>'; 
+                    return; 
+                }
 
                 opere.forEach(op => {
                     container.innerHTML += `
@@ -184,7 +190,9 @@
                             <small>${op.license || ''}</small>
                         </div>`;
                 });
-            } catch (e) { console.error(e); }
+            } catch (error) { 
+                console.error("Fetch error:", error); 
+            }
         }
 
         window.onload = cercaOpere;

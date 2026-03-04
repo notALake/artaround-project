@@ -1,6 +1,5 @@
 const Item = require('../models/Item');
 
-// 1. Crea una nuova opera (Create)
 exports.createItem = async (req, res) => {
   try {
     const newItem = new Item(req.body);
@@ -11,20 +10,13 @@ exports.createItem = async (req, res) => {
   }
 };
 
-// 2. Ottieni le opere (con RICERCA opzionale)
 exports.getItems = async (req, res) => {
   try {
-    // Leggiamo se c'è un parametro ?q=... nell'indirizzo
     const { q } = req.query;
-
-    let filtro = {};
+    let filter = {};
     
     if (q) {
-      // Se l'utente sta cercando qualcosa, creiamo un filtro speciale
-      // $or: cerca O nel nome O nell'autore
-      // $regex: cerca anche solo una parte del testo (es. "Leo" trova "Leonardo")
-      // $options: 'i' ignora maiuscole/minuscole
-      filtro = {
+      filter = {
         $or: [
           { name: { $regex: q, $options: 'i' } },
           { author: { $regex: q, $options: 'i' } }
@@ -32,15 +24,13 @@ exports.getItems = async (req, res) => {
       };
     }
 
-    // Chiediamo a MongoDB di trovare solo gli item che rispettano il filtro
-    const items = await Item.find(filtro);
+    const items = await Item.find(filter);
     res.status(200).json(items);
   } catch (error) {
     res.status(500).json({ message: "Errore nel recupero degli items", error });
   }
 };
 
-// 3. Ottieni una singola opera (Read One)
 exports.getItemById = async (req, res) => {
   try {
     const item = await Item.findById(req.params.id);

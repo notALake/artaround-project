@@ -4,37 +4,22 @@ const bcrypt = require('bcrypt');
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   surname: { type: String, required: true },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
-  },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
-  role: {
-    type: String,
-    enum: ['student', 'teacher'],
-    default: 'student',
-    required: true
-  }
+  role: { type: String, enum: ['student', 'teacher'], default: 'student', required: true }
 }, { timestamps: true });
 
-// --- MIDDLEWARE DI SICUREZZA ---
-// Nel file models/User.js
-userSchema.pre('save', async function() { // Rimosso 'next' dai parametri
-  if (!this.isModified('password')) return; // Rimosso 'next()'
+userSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
 
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    // ✅ NON chiamare next() qui, basta che la funzione finisca
   } catch (error) {
-    throw error; // Invece di next(error), lancia l'errore
+    throw error;
   }
 });
 
-// Metodo per il login (ci servirà dopo)
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
