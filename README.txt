@@ -1,4 +1,4 @@
-@çMembri del gruppo:
+@Membri del gruppo:
 1. [Christian Cani] - [0001171190] - [christian.cani@studio.unibo.it] (Membro 1: Backend & Editor)
 2. [Nome Membro 2] - [Matricola] - [Email]
 3. [Tommaso Zamparelli] - [0001128277] - [tommaso.zamparelli@studio.unibo.it] 
